@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shadow System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body role="application" aria-label="Shadow System Interface">
+    <!-- Content Souls Container (for animations during break) -->
+    <div
+      id="content-souls-container"
+      class="content-souls-container"
+      aria-hidden="true"
+    ></div>
+
+    <!-- Idle Collection Counter (shown when animations disabled) -->
+    <div
+      id="idle-collection-counter"
+      class="idle-collection-counter"
+      style="display: none"
+      role="status"
+      aria-live="polite"
+      aria-label="Shadow Harvest Counter"
+    >
+      <span class="counter-label">Shadow Soldiers</span>
+      <span id="idle-counter-value" class="counter-value">0</span>
+    </div>
+
+    <!-- Soul Embers Increment Notification -->
+    <div
+      id="embers-increment"
+      class="embers-increment"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <!-- Idle View: Default state when no session is active -->
+    <div id="idle-view" class="view" role="main" aria-label="Idle View">
+      <div class="character-container">
+        <h1 class="game-title">SHADOW SYSTEM</h1>
+      </div>
+
+      <div class="stats-panel" role="region" aria-label="Hunter Statistics">
+        <div class="stat-item">
+          <span class="stat-label stat-label-hover" id="spirit-label" data-tooltip="Increases Shadow EXP earned per session">Focus Power:</span>
+          <span
+            id="stat-spirit"
+            class="stat-value"
+            aria-labelledby="spirit-label"
+            >1</span
+          >
+        </div>
+        <div class="stat-item">
+          <span class="stat-label stat-label-hover tooltip-center" id="harmony-label" data-tooltip="Chance to deal critical damage in quests">Shadow Control:</span>
+          <span
+            id="stat-harmony"
+            class="stat-value"
+            aria-labelledby="harmony-label"
+            >5%</span
+          >
+        </div>
+        <div class="stat-item">
+          <span class="stat-label stat-label-hover" id="soulflow-label" data-tooltip="Increases Shadow Embers earned">Willpower:</span>
+          <span
+            id="stat-soulflow"
+            class="stat-value"
+            aria-labelledby="soulflow-label"
+            >1</span
+          >
+        </div>
+        <div class="stat-item">
+          <span class="stat-label" id="level-label">Rank:</span>
+          <span id="stat-level" class="stat-value" aria-labelledby="level-label"
+            >1</span
+          >
+        </div>
+      </div>
+
+      <div
+        class="currency-panel"
+        role="region"
+        aria-label="Currency and Experience"
+      >
+        <div class="currency-item">
+          <span class="currency-label">Shadow EXP:</span>
+          <div class="xp-bar-with-icon">
+            <img src="assets/icons/soul_insight.png" alt="" class="currency-icon" aria-hidden="true" />
+            <div
+              class="xp-bar-container"
+              role="progressbar"
+              aria-label="Shadow EXP to next rank"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
+              <div id="xp-bar" class="xp-bar"></div>
+              <span id="xp-text" class="xp-text">0 / 100</span>
+            </div>
+          </div>
+        </div>
+        <div class="currency-item">
+          <span class="currency-label" id="embers-label">Shadow Ember:</span>
+          <div class="currency-value-with-icon">
+            <img src="assets/icons/soul_ember.png" alt="" class="currency-icon" aria-hidden="true" />
+            <span
+              id="soul-embers"
+              class="currency-value"
+              aria-labelledby="embers-label"
+              >0</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="boss-card" role="region" aria-label="Current Quest Target">
+        <div class="boss-header">
+          <h3 id="boss-name" class="boss-name">The Unfinished Scholar</h3>
+          <button id="boss-info-btn" class="boss-info-btn" aria-label="View target details">i</button>
+        </div>
+        <p id="boss-backstory" class="boss-backstory">Loading...</p>
+        <div class="resolve-bar-with-icon">
+          <img src="assets/icons/soul_resolve.png" alt="" class="resolve-icon" aria-hidden="true" />
+          <div
+            class="resolve-bar-container"
+            role="progressbar"
+            aria-label="Target HP remaining"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="100"
+          >
+            <div id="resolve-bar" class="resolve-bar"></div>
+            <span id="resolve-text" class="resolve-text">100 / 100</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="session-controls"
+        role="form"
+        aria-label="Start Command"
+      >
+        <label for="task-selector" class="control-label">Quest:</label>
+        <div class="task-selector-row">
+          <select
+            id="task-selector"
+            class="task-selector"
+            aria-label="Select quest to embark on"
+            aria-required="false"
+          >
+            <option value="">Select a quest...</option>
+          </select>
+          <button
+            id="open-options-btn"
+            class="gear-icon-btn"
+            aria-label="Open settings to manage tasks"
+            title="Manage tasks in settings"
+          >
+            <img src="assets/icons/gear_icon.png" alt="" class="gear-icon" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div class="duration-row">
+          <div class="duration-input-group">
+            <label for="duration-input" class="control-label"
+              >Command Time (m):</label
+            >
+            <input
+              id="duration-input"
+              type="number"
+              min="5"
+              max="120"
+              value="25"
+              class="duration-input"
+              aria-label="Session duration in minutes"
+              aria-required="true"
+            />
+          </div>
+          <div class="auto-complete-group">
+            <label for="auto-complete-checkbox" class="checkbox-label">
+              <input
+                id="auto-complete-checkbox"
+                type="checkbox"
+                class="auto-complete-checkbox"
+                aria-label="Mark quest as complete when command ends"
+              />
+              <span class="checkbox-text">Complete when done</span>
+            </label>
+          </div>
+        </div>
+
+        <button
+          id="start-session-btn"
+          class="primary-button"
+          aria-label="Enter Shadow Mode"
+        >
+          ENTER SHADOW MODE
+        </button>
+      </div>
+    </div>
+
+    <!-- Focus Session View: Minimal view during active session -->
+    <div
+      id="focus-session-view"
+      class="view hidden"
+      role="main"
+      aria-label="Shadow Mode Active"
+    >
+      <div class="focus-message-container">
+        <p class="focus-message" role="status" aria-live="polite">
+          The Shadow System monitors your focus. Ascend.
+        </p>
+        <div
+          class="focus-communing-image"
+          role="img"
+          aria-label="Shadow ascending"
+        ></div>
+        <p
+          id="time-remaining"
+          class="time-remaining"
+          role="timer"
+          aria-live="off"
+          aria-atomic="true"
+        ></p>
+      </div>
+    </div>
+
+    <!-- Reward View: Displayed after session completion -->
+    <div
+      id="reward-view"
+      class="view hidden"
+      role="main"
+      aria-label="Command Rewards"
+    >
+      <div class="reward-container">
+        <h2 class="reward-title">COMMAND COMPLETE</h2>
+
+        <div class="reward-item" role="group" aria-label="Shadow EXP earned">
+          <span class="reward-label" id="insight-earned-label"
+            >Shadow EXP Earned:</span
+          >
+          <span
+            id="reward-soul-insight"
+            class="reward-value"
+            aria-labelledby="insight-earned-label"
+            >0</span
+          >
+        </div>
+
+        <div class="reward-xp-container">
+          <span class="reward-xp-label">Shadow EXP Progress:</span>
+          <div
+            class="reward-xp-bar-container"
+            role="progressbar"
+            aria-label="Shadow EXP to next rank"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <div id="reward-xp-bar" class="reward-xp-bar"></div>
+            <span id="reward-xp-text" class="reward-xp-text">0 / 100</span>
+          </div>
+        </div>
+
+        <div class="reward-item" role="group" aria-label="Shadow Embers earned">
+          <span class="reward-label" id="embers-earned-label"
+            >Shadow Embers Earned:</span
+          >
+          <span
+            id="reward-soul-embers"
+            class="reward-value"
+            aria-labelledby="embers-earned-label"
+            >0</span
+          >
+        </div>
+
+        <div class="reward-item" role="group" aria-label="Target damage dealt">
+          <span class="reward-label" id="boss-damage-label"
+            >Target HP Reduced:</span
+          >
+          <span
+            id="reward-boss-damage"
+            class="reward-value"
+            aria-labelledby="boss-damage-label"
+            >0</span
+          >
+        </div>
+
+        <div
+          class="reward-item"
+          role="group"
+          aria-label="Target HP remaining"
+        >
+          <span class="reward-label" id="boss-resolve-label"
+            >Target HP Remaining:</span
+          >
+          <span
+            id="reward-boss-resolve"
+            class="reward-value"
+            aria-labelledby="boss-resolve-label"
+            >0</span
+          >
+        </div>
+
+        <div
+          id="critical-indicator"
+          class="critical-indicator hidden"
+          role="status"
+          aria-live="polite"
+        >
+          ⚡ Critical Strike! ⚡
+        </div>
+
+        <div
+          id="compromise-warning"
+          class="compromise-warning hidden"
+          role="alert"
+          aria-live="assertive"
+        >
+          ⚠️ Command Compromised - Reduced Rewards
+        </div>
+
+        <div
+          class="time-breakdown"
+          role="region"
+          aria-label="Session time breakdown"
+        >
+          <div class="time-item">
+            <span class="time-label" id="active-time-label">Active Time:</span>
+            <span
+              id="active-time"
+              class="time-value"
+              aria-labelledby="active-time-label"
+              >0m</span
+            >
+          </div>
+          <div class="time-item">
+            <span class="time-label" id="idle-time-label">Idle Time:</span>
+            <span
+              id="idle-time"
+              class="time-value"
+              aria-labelledby="idle-time-label"
+              >0m</span
+            >
+          </div>
+        </div>
+
+        <button
+          id="continue-break-btn"
+          class="primary-button"
+          aria-label="Enter recovery phase"
+        >
+          Enter Recovery Phase
+        </button>
+      </div>
+    </div>
+
+    <!-- Break View: Full game UI during break period -->
+    <div
+      id="break-view"
+      class="view hidden"
+      role="main"
+      aria-label="Recovery Phase"
+    >
+      <div class="character-container">
+        <h1 class="game-title">SHADOW SYSTEM</h1>
+      </div>
+
+      <div
+        class="stats-panel"
+        role="region"
+        aria-label="Hunter Statistics with Level Up Options"
+      >
+        <div class="stat-item-upgrade">
+          <div class="stat-info">
+            <span class="stat-label" id="break-spirit-label">Focus Power:</span>
+            <span
+              id="break-stat-spirit"
+              class="stat-value"
+              aria-labelledby="break-spirit-label"
+              >1</span
+            >
+          </div>
+          <div
+            class="upgrade-buttons"
+            role="group"
+            aria-label="Focus Power upgrade options"
+          >
+            <button
+              id="allocate-spirit-btn"
+              class="skill-point-button"
+              aria-label="Allocate awakening point to Focus Power"
+            >
+              <span class="skill-point-icon" aria-hidden="true">★</span>
+            </button>
+            <button
+              id="upgrade-spirit-btn"
+              class="upgrade-button"
+              aria-label="Upgrade Focus Power with Shadow Embers"
+            >
+              <span class="upgrade-icon" aria-hidden="true">⬆</span>
+              <span
+                id="upgrade-spirit-cost"
+                class="upgrade-cost"
+                aria-label="Cost: 10 Shadow Embers"
+                >10</span
+              >
+            </button>
+          </div>
+        </div>
+        <div class="stat-item-upgrade">
+          <div class="stat-info">
+            <span class="stat-label" id="break-harmony-label">Shadow Control:</span>
+            <span
+              id="break-stat-harmony"
+              class="stat-value"
+              aria-labelledby="break-harmony-label"
+              >5%</span
+            >
+          </div>
+          <div
+            class="upgrade-buttons"
+            role="group"
+            aria-label="Shadow Control upgrade options"
+          >
+            <button
+              id="allocate-harmony-btn"
+              class="skill-point-button"
+              aria-label="Allocate awakening point to Shadow Control"
+            >
+              <span class="skill-point-icon" aria-hidden="true">★</span>
+            </button>
+            <button
+              id="upgrade-harmony-btn"
+              class="upgrade-button"
+              aria-label="Upgrade Shadow Control with Shadow Embers"
+            >
+              <span class="upgrade-icon" aria-hidden="true">⬆</span>
+              <span
+                id="upgrade-harmony-cost"
+                class="upgrade-cost"
+                aria-label="Cost: 10 Shadow Embers"
+                >10</span
+              >
+            </button>
+          </div>
+        </div>
+        <div class="stat-item-upgrade">
+          <div class="stat-info">
+            <span class="stat-label" id="break-soulflow-label">Willpower:</span>
+            <span
+              id="break-stat-soulflow"
+              class="stat-value"
+              aria-labelledby="break-soulflow-label"
+              >1</span
+            >
+          </div>
+          <div
+            class="upgrade-buttons"
+            role="group"
+            aria-label="Willpower upgrade options"
+          >
+            <button
+              id="allocate-soulflow-btn"
+              class="skill-point-button"
+              aria-label="Allocate awakening point to Willpower"
+            >
+              <span class="skill-point-icon" aria-hidden="true">★</span>
+            </button>
+            <button
+              id="upgrade-soulflow-btn"
+              class="upgrade-button"
+              aria-label="Upgrade Willpower with Shadow Embers"
+            >
+              <span class="upgrade-icon" aria-hidden="true">⬆</span>
+              <span
+                id="upgrade-soulflow-cost"
+                class="upgrade-cost"
+                aria-label="Cost: 10 Shadow Embers"
+                >10</span
+              >
+            </button>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label" id="break-level-label">Rank Level:</span>
+          <span
+            id="break-stat-level"
+            class="stat-value"
+            aria-labelledby="break-level-label"
+            >1</span
+          >
+        </div>
+      </div>
+
+      <div
+        class="skill-points-panel"
+        role="status"
+        aria-live="polite"
+        aria-label="Available awakening points"
+      >
+        <span class="skill-points-label" id="skill-points-label"
+          >Available Awakening Points:</span
+        >
+        <span
+          id="skill-points-value"
+          class="skill-points-value"
+          aria-labelledby="skill-points-label"
+          >0</span
+        >
+      </div>
+
+      <div class="currency-panel" role="region" aria-label="Currency">
+        <div class="currency-item">
+          <span class="currency-label" id="break-embers-label"
+            >Shadow Embers:</span
+          >
+          <div class="currency-value-with-icon">
+            <img src="assets/icons/soul_ember.png" alt="" class="currency-icon" aria-hidden="true" />
+            <span
+              id="break-soul-embers"
+              class="currency-value"
+              aria-labelledby="break-embers-label"
+              >0</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="boss-card" role="region" aria-label="Current Target">
+        <div class="boss-header">
+          <h3 id="break-boss-name" class="boss-name">The Unfinished Scholar</h3>
+          <button id="break-boss-info-btn" class="boss-info-btn" aria-label="View target details">i</button>
+        </div>
+        <p id="break-boss-backstory" class="boss-backstory">Loading...</p>
+        <div class="resolve-bar-with-icon">
+          <img src="assets/icons/soul_resolve.png" alt="" class="resolve-icon" aria-hidden="true" />
+          <div
+            class="resolve-bar-container"
+            role="progressbar"
+            aria-label="Target HP remaining"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="100"
+          >
+            <div id="break-resolve-bar" class="resolve-bar"></div>
+            <span id="break-resolve-text" class="resolve-text">100 / 100</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="break-timer"
+        role="timer"
+        aria-live="off"
+        aria-label="Recovery time remaining"
+      >
+        <span class="break-label">Recovery Time Remaining:</span>
+        <span id="break-countdown" class="break-countdown">5:00</span>
+      </div>
+
+      <!-- Cosmetics Shop -->
+      <div class="shop-section" role="region" aria-label="Shadow Vault" style="display: none;">
+        <h3 class="shop-title">SHADOW VAULT</h3>
+
+        <div class="shop-tabs" role="tablist" aria-label="Vault categories">
+          <button
+            id="themes-tab"
+            class="shop-tab active"
+            role="tab"
+            aria-selected="true"
+            aria-controls="themes-shop"
+          >
+            Auras
+          </button>
+          <button
+            id="sprites-tab"
+            class="shop-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="sprites-shop"
+          >
+            Avatars
+          </button>
+        </div>
+
+        <div
+          id="themes-shop"
+          class="shop-content"
+          role="tabpanel"
+          aria-labelledby="themes-tab"
+        >
+          <div id="themes-list" class="cosmetics-list"></div>
+        </div>
+
+        <div
+          id="sprites-shop"
+          class="shop-content hidden"
+          role="tabpanel"
+          aria-labelledby="sprites-tab"
+        >
+          <div id="sprites-list" class="cosmetics-list"></div>
+        </div>
+      </div>
+
+      <button
+        id="start-next-session-btn"
+        class="primary-button"
+        aria-label="Execute next command"
+      >
+        EXECUTE NEXT COMMAND
+      </button>
+    </div>
+
+    <script src="dist/popup.js"></script>
+  </body>
+</html>
